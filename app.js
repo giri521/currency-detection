@@ -12,7 +12,7 @@ async function setup() {
     video.srcObject = stream;
 
     // Load the Teachable Machine model
-    model = await tf.loadGraphModel('https://your-username.github.io/currency-detection/model/model.json');
+    model = await tf.loadGraphModel('https://your-username.github.io/currency-detection/model.json');
     isModelLoaded = true;
     console.log("Model loaded successfully!");
     
