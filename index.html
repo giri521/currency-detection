@@ -22,7 +22,8 @@
 </head>
 <body>
     <h2>Currency Detection Using Teachable Machine</h2>
-    <button onclick="init()">Start Detection</button>
+    <button onclick="init()">Start Detection (Front Camera)</button>
+    <button onclick="init(true)">Start Detection (Back Camera)</button>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
     <div id="message"></div>
@@ -32,95 +33,83 @@
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script>
-        // URL for your Teachable Machine model
         const URL = "https://teachablemachine.withgoogle.com/models/J-kXaPdE1/";
 
-        // Global variables
         let model, webcam, labelContainer, maxPredictions;
-        let lastPlayedTime = 0; // Timestamp for last audio play
+        let lastPlayedTime = 0;
 
-        // Mapping of classes to their respective MP3 files (local paths)
         const audioFiles = {
-            "500": "500.mp3",
-            "200": "200.mp3",
-            "100": "100.mp3",
-            "50": "50.mp3",
-            "10": "10.mp3",
+            "500": "audio/500.mp3",
+            "200": "audio/200.mp3",
+            "100": "audio/100.mp3",
+            "50": "audio/50.mp3",
+            "10": "audio/10.mp3",
             "100 (USD)": "audio/100_dollar.mp3",
             "50 (USD)": "audio/50_dollar.mp3",
             "20 (USD)": "audio/20_dollar.mp3",
             "10 (USD)": "audio/10_dollar.mp3",
-            "dolloe":"dollar.mp3",
             "No currency note detected": "audio/no_currency.mp3"
         };
 
-        // Function to initialize the model and webcam
-        async function init() {
+        async function init(useBackCamera = false) {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
 
-            // Load the model and metadata
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
-            // Setup webcam with optional flip (for mirroring the webcam)
-            const flip = true; 
-            webcam = new tmImage.Webcam(200, 200, flip); 
-            await webcam.setup(); 
-            await webcam.play();  
+            const flip = !useBackCamera; // Flip webcam if using front camera
+            webcam = new tmImage.Webcam(200, 200, flip);
+
+            // Set the camera ID for back or front camera
+            const facingMode = useBackCamera ? {facingMode: { exact: "environment" }} : "user";
+            await webcam.setup({ facingMode }); 
+            await webcam.play();
             window.requestAnimationFrame(loop);
 
-            // Append the webcam video to the DOM
+            document.getElementById("webcam-container").innerHTML = ""; // Clear any existing webcam
             document.getElementById("webcam-container").appendChild(webcam.canvas);
 
-            // Create labels for predictions
             labelContainer = document.getElementById("label-container");
+            labelContainer.innerHTML = ""; // Clear any previous labels
             for (let i = 0; i < maxPredictions; i++) {
                 labelContainer.appendChild(document.createElement("div"));
             }
         }
 
-        // Function to continuously capture webcam frames and make predictions
         async function loop() {
             webcam.update(); 
             await predict(); 
             window.requestAnimationFrame(loop); 
         }
 
-        // Function to make predictions based on the webcam frame
         async function predict() {
             const predictions = await model.predict(webcam.canvas);
 
             let maxProbability = 0;
             let predictedClass = "";
 
-            // Find the highest probability prediction
             for (let i = 0; i < maxPredictions; i++) {
                 const classPrediction = predictions[i].className;
                 const probability = predictions[i].probability.toFixed(2);
 
-                // Update the UI with class names and probabilities
                 labelContainer.childNodes[i].innerHTML = `${classPrediction}: ${probability}`;
 
-                // Track the highest probability and its class
                 if (parseFloat(probability) > maxProbability) {
                     maxProbability = parseFloat(probability);
                     predictedClass = classPrediction;
                 }
             }
 
-            // Update the detected currency note display continuously
             document.getElementById("message").innerHTML = `Detected: ${predictedClass}`;
 
-            // Play audio only if confidence level is high enough and 10 seconds have passed since the last play
             const currentTime = Date.now();
-            if (maxProbability >= 0.75 && (currentTime - lastPlayedTime >= 10000)) { // 10 seconds = 10000 ms
-                playAudio(predictedClass); // Play the corresponding audio
-                lastPlayedTime = currentTime; // Update last played time
+            if (maxProbability >= 0.75 && (currentTime - lastPlayedTime >= 10000)) {
+                playAudio(predictedClass); 
+                lastPlayedTime = currentTime;
             }
         }
 
-        // Function to play the audio for the detected class
         function playAudio(className) {
             const audioPath = audioFiles[className];
             if (audioPath) {
@@ -128,14 +117,11 @@
                 audio.play().catch((error) => {
                     console.error("Audio failed to play:", error);
                 });
-                console.log(`Playing audio for: ${className}`); // Debugging line to check which file is being played
+                console.log(`Playing audio for: ${className}`);
             } else {
-                console.error("Audio file not found for: " + className); // Log an error if the file path is missing
+                console.error("Audio file not found for: " + className);
             }
         }
-
-        // Start detection once the page loads
-        init();
     </script>
 </body>
 </html>
