@@ -1,44 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>INR Currency Detection</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script> <!-- TensorFlow.js -->
-  <script async src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-automl"></script> <!-- TensorFlow.js AutoML -->
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
-    #video {
-      width: 80%;
-      border: 1px solid #ddd;
-      margin-bottom: 10px;
-    }
-    #outputCanvas {
-      margin-top: 20px;
-    }
-    #currencyName {
-      font-size: 24px;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INR Currency Detector</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script> <!-- TensorFlow.js CDN -->
 </head>
 <body>
+    <div class="container">
+        <h1>INR Currency Note Detection</h1>
+        <p>Show your INR currency note to the camera to detect it.</p>
+        <video id="video" width="600" height="400" autoplay></video>
+        <div id="result">
+            <p>Detected Currency: <span id="currency-name">None</span></p>
+        </div>
+    </div>
 
-  <h1>INR Currency Detection</h1>
-  
-  <!-- Video Element to display live camera feed -->
-  <video id="video" width="640" height="480" autoplay></video>
-  
-  <!-- Canvas to display processed image -->
-  <canvas id="outputCanvas" width="640" height="480"></canvas>
-  
-  <!-- Display detected currency name -->
-  <div id="currencyName">Detected Currency: None</div>
-
-  <script src="app.js"></script> <!-- Link to JavaScript file -->
+    <script src="script.js"></script>
 </body>
 </html>
