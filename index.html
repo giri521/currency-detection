@@ -3,14 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Currency Detection</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Currency Note Detector</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        #webcam-container {
+            text-align: center;
+        }
+        #label-container {
+            text-align: center;
+            font-size: 20px;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Currency Detection App</h1>
-    <p id="status">Waiting for the camera...</p>
-    <canvas id="canvas" width="640" height="480"></canvas>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="app.js"></script>
+
+    <h1>Currency Note Detector</h1>
+    <button type="button" onclick="init()">Start Webcam</button>
+    <div id="webcam-container"></div>
+    <div id="label-container"></div>
+
+    <script type="text/javascript">
+        // Replace this URL with your own Teachable Machine model URL
+        const URL = "https://teachablemachine.withgoogle.com/models/your-model-id/";
+
+        let model, webcam, labelContainer, maxPredictions;
+
+        // Load the image model and setup the webcam
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // Load the model and metadata
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            // Setup webcam
+            const flip = true;  // flip the webcam
+            webcam = new tmImage.Webcam(200, 200, flip);
+            await webcam.setup();  // Request access to webcam
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+
+            // Append webcam canvas to DOM
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+            // Create label containers
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.appendChild(document.createElement("div"));
+            }
+        }
+
+        async function loop() {
+            webcam.update();  // Update webcam frame
+            await predict();  // Run prediction
+            window.requestAnimationFrame(loop);
+        }
+
+        // Run the webcam image through the image model
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction = prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
+        }
+    </script>
+
 </body>
 </html>
