@@ -3,34 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Currency Note Detector</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <title>Currency Detection Using Teachable Machine</title>
     <style>
+        #message {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
         #webcam-container {
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
         }
         #label-container {
-            text-align: center;
-            font-size: 20px;
             margin-top: 20px;
         }
     </style>
 </head>
 <body>
-
-    <h1>Currency Note Detector</h1>
-    <button type="button" onclick="init()">Start Webcam</button>
+    <h2>Currency Detection Using Teachable Machine</h2>
+    <button onclick="init()">Start Detection</button>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
+    <div id="message"></div>
 
-    <script type="text/javascript">
-        // Replace this URL with your own Teachable Machine model URL
-        const URL = "https://teachablemachine.withgoogle.com/models/your-model-id/";
+    <!-- Load TensorFlow.js and Teachable Machine libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
+    <script>
+        // URL for your Teachable Machine model
+        const URL = "https://teachablemachine.withgoogle.com/models/J-kXaPdE1/";
+
+        // Global variables
         let model, webcam, labelContainer, maxPredictions;
+        let lastPlayedTime = 0; // Timestamp for last audio play
 
-        // Load the image model and setup the webcam
+        // Mapping of classes to their respective MP3 files (local paths)
+        const audioFiles = {
+            "500": "audio/500.mp3",
+            "200": "audio/200.mp3",
+            "100": "audio/100.mp3",
+            "50": "audio/50.mp3",
+            "10": "audio/10.mp3",
+            "100 (USD)": "audio/100_dollar.mp3",
+            "50 (USD)": "audio/50_dollar.mp3",
+            "20 (USD)": "audio/20_dollar.mp3",
+            "10 (USD)": "audio/10_dollar.mp3",
+            "No currency note detected": "audio/no_currency.mp3"
+        };
+
+        // Function to initialize the model and webcam
         async function init() {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
@@ -39,38 +62,79 @@
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
-            // Setup webcam
-            const flip = true;  // flip the webcam
-            webcam = new tmImage.Webcam(200, 200, flip);
-            await webcam.setup();  // Request access to webcam
-            await webcam.play();
+            // Setup webcam with optional flip (for mirroring the webcam)
+            const flip = true; 
+            webcam = new tmImage.Webcam(200, 200, flip); 
+            await webcam.setup(); 
+            await webcam.play();  
             window.requestAnimationFrame(loop);
 
-            // Append webcam canvas to DOM
+            // Append the webcam video to the DOM
             document.getElementById("webcam-container").appendChild(webcam.canvas);
 
-            // Create label containers
+            // Create labels for predictions
             labelContainer = document.getElementById("label-container");
             for (let i = 0; i < maxPredictions; i++) {
                 labelContainer.appendChild(document.createElement("div"));
             }
         }
 
+        // Function to continuously capture webcam frames and make predictions
         async function loop() {
-            webcam.update();  // Update webcam frame
-            await predict();  // Run prediction
-            window.requestAnimationFrame(loop);
+            webcam.update(); 
+            await predict(); 
+            window.requestAnimationFrame(loop); 
         }
 
-        // Run the webcam image through the image model
+        // Function to make predictions based on the webcam frame
         async function predict() {
-            const prediction = await model.predict(webcam.canvas);
+            const predictions = await model.predict(webcam.canvas);
+
+            let maxProbability = 0;
+            let predictedClass = "";
+
+            // Find the highest probability prediction
             for (let i = 0; i < maxPredictions; i++) {
-                const classPrediction = prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-                labelContainer.childNodes[i].innerHTML = classPrediction;
+                const classPrediction = predictions[i].className;
+                const probability = predictions[i].probability.toFixed(2);
+
+                // Update the UI with class names and probabilities
+                labelContainer.childNodes[i].innerHTML = `${classPrediction}: ${probability}`;
+
+                // Track the highest probability and its class
+                if (parseFloat(probability) > maxProbability) {
+                    maxProbability = parseFloat(probability);
+                    predictedClass = classPrediction;
+                }
+            }
+
+            // Update the detected currency note display continuously
+            document.getElementById("message").innerHTML = `Detected: ${predictedClass}`;
+
+            // Play audio only if confidence level is high enough and 10 seconds have passed since the last play
+            const currentTime = Date.now();
+            if (maxProbability >= 0.75 && (currentTime - lastPlayedTime >= 10000)) { // 10 seconds = 10000 ms
+                playAudio(predictedClass); // Play the corresponding audio
+                lastPlayedTime = currentTime; // Update last played time
             }
         }
-    </script>
 
+        // Function to play the audio for the detected class
+        function playAudio(className) {
+            const audioPath = audioFiles[className];
+            if (audioPath) {
+                const audio = new Audio(audioPath);
+                audio.play().catch((error) => {
+                    console.error("Audio failed to play:", error);
+                });
+                console.log(`Playing audio for: ${className}`); // Debugging line to check which file is being played
+            } else {
+                console.error("Audio file not found for: " + className); // Log an error if the file path is missing
+            }
+        }
+
+        // Start detection once the page loads
+        init();
+    </script>
 </body>
 </html>
