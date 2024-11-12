@@ -3,21 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INR Currency Detection</title>
+    <title>Currency Detection</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-node"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>INR Currency Note Detection</h1>
-        <p>Show your INR currency note to the camera to detect it.</p>
-        <video id="video" width="600" height="400" autoplay></video>
-        <div id="result">
-            <p>Detected Currency: <span id="currency-name">None</span></p>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
+    <h1>Currency Detection App</h1>
+    <p id="status">Waiting for the camera...</p>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="script.js"></script>
 </body>
 </html>
