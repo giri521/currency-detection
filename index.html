@@ -44,7 +44,7 @@
             "100": "100.mp3",
             "50": "50.mp3",
             "10": "10.mp3",
-            "100 (USD)": "audio/100_dollar.mp3",
+            "100 (USD)": "100_dollar.mp3",
             "50 (USD)": "audio/50_dollar.mp3",
             "20 (USD)": "audio/20_dollar.mp3",
             "10 (USD)": "audio/10_dollar.mp3",
@@ -63,8 +63,8 @@
             const constraints = {
                 video: {
                     facingMode: useBackCamera ? { exact: "environment" } : "user",
-                    width: 200,
-                    height: 200
+                    width: 320, // Reduced resolution for faster loading
+                    height: 240
                 }
             };
 
@@ -73,13 +73,13 @@
                     const videoElement = document.createElement("video");
                     videoElement.srcObject = stream;
                     videoElement.play();
-                    videoElement.width = 200;
-                    videoElement.height = 200;
+                    videoElement.width = 320; // Adjusted width
+                    videoElement.height = 240; // Adjusted height
 
                     document.getElementById("webcam-container").innerHTML = ""; // Clear existing webcam
                     document.getElementById("webcam-container").appendChild(videoElement);
 
-                    webcam = new tmImage.Webcam(200, 200, false);
+                    webcam = new tmImage.Webcam(320, 240, false);
                     webcam.video = videoElement;
 
                     labelContainer = document.getElementById("label-container");
