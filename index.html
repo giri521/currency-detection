@@ -22,7 +22,7 @@
 </head>
 <body>
     <h2>Currency Detection Using Teachable Machine</h2>
-    <button onclick="init()">Start Detection (Front Camera)</button>
+    <button onclick="init(false)">Start Detection (Front Camera)</button>
     <button onclick="init(true)">Start Detection (Back Camera)</button>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
@@ -58,33 +58,53 @@
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
-            const flip = !useBackCamera; // Flip webcam if using front camera
-            webcam = new tmImage.Webcam(200, 200, flip);
+            if (webcam) webcam.stop();
 
-            // Set the camera ID for back or front camera
-            const facingMode = useBackCamera ? {facingMode: { exact: "environment" }} : "user";
-            await webcam.setup({ facingMode }); 
-            await webcam.play();
-            window.requestAnimationFrame(loop);
+            const constraints = {
+                video: {
+                    facingMode: useBackCamera ? { exact: "environment" } : "user",
+                    width: 200,
+                    height: 200
+                }
+            };
 
-            document.getElementById("webcam-container").innerHTML = ""; // Clear any existing webcam
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream) {
+                    const videoElement = document.createElement("video");
+                    videoElement.srcObject = stream;
+                    videoElement.play();
+                    videoElement.width = 200;
+                    videoElement.height = 200;
 
-            labelContainer = document.getElementById("label-container");
-            labelContainer.innerHTML = ""; // Clear any previous labels
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
-            }
+                    document.getElementById("webcam-container").innerHTML = ""; // Clear existing webcam
+                    document.getElementById("webcam-container").appendChild(videoElement);
+
+                    webcam = new tmImage.Webcam(200, 200, false);
+                    webcam.video = videoElement;
+
+                    labelContainer = document.getElementById("label-container");
+                    labelContainer.innerHTML = ""; // Clear previous labels
+                    for (let i = 0; i < maxPredictions; i++) {
+                        labelContainer.appendChild(document.createElement("div"));
+                    }
+
+                    videoElement.onloadedmetadata = () => {
+                        videoElement.play();
+                        window.requestAnimationFrame(loop);
+                    };
+                })
+                .catch(function(err) {
+                    console.error("Error accessing the camera: ", err);
+                });
         }
 
         async function loop() {
-            webcam.update(); 
             await predict(); 
             window.requestAnimationFrame(loop); 
         }
 
         async function predict() {
-            const predictions = await model.predict(webcam.canvas);
+            const predictions = await model.predict(webcam.video);
 
             let maxProbability = 0;
             let predictedClass = "";
