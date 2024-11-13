@@ -139,8 +139,8 @@
         }
 
         async function loop() {
-            await predict(); 
-            window.requestAnimationFrame(loop); 
+            await predict();
+            window.requestAnimationFrame(loop);
         }
 
         async function predict() {
@@ -164,8 +164,8 @@
             document.getElementById("message").innerHTML = `Detected: ${predictedClass}`;
 
             const currentTime = Date.now();
-            if (maxProbability >= 0.75 && (currentTime - lastPlayedTime >= 10000)) {
-                playAudio(predictedClass); 
+            if (maxProbability >= 0.75 && (currentTime - lastPlayedTime >= 5000)) { // Changed to 5000ms for 5 seconds
+                playAudio(predictedClass);
                 lastPlayedTime = currentTime;
             }
         }
