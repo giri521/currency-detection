@@ -89,7 +89,9 @@
 
                     document.getElementById("webcam-container").innerHTML = ""; 
                     document.getElementById("webcam-container").appendChild(videoElement);
-                    document.getElementById("camera-status").innerHTML = `Camera: ${useBackCamera ? "Back" : "Front"}`;
+                    const cameraType = useBackCamera ? "Back Camera" : "Front Camera";
+                    document.getElementById("camera-status").innerHTML = `Camera: ${cameraType}`;
+                    speak(`Switched to ${cameraType}`);
 
                     webcam = new tmImage.Webcam(320, 240, false);
                     webcam.video = videoElement;
@@ -151,4 +153,5 @@
     </script>
 </body>
 </html>
+
 
