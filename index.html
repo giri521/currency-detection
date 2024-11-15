@@ -5,27 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Currency Detection Using Teachable Machine</title>
     <style>
-        /* Apply a gradient background for a modern mobile-friendly look */
         body {
-            background: linear-gradient(to right, #4facfe, #00f2fe); /* Gradient background */
+            background: linear-gradient(to right, #4facfe, #00f2fe);
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             text-align: center;
-        }
-
-        h2 {
             color: white;
-            margin-bottom: 20px;
-            font-size: 24px;
         }
-
-        /* Style the buttons for better visibility on mobile */
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
         button {
             background-color: #00f2fe;
             border: none;
@@ -37,25 +31,18 @@
             border-radius: 8px;
             transition: background-color 0.3s;
         }
-
         button:hover {
             background-color: #009cbb;
         }
-
-        #message {
+        #message, #camera-status {
             font-size: 20px;
             font-weight: bold;
             margin-top: 20px;
             color: white;
         }
-
         #webcam-container {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
-        }
-
-        #label-container {
             margin-top: 20px;
         }
     </style>
@@ -66,30 +53,16 @@
     <button onclick="init(true)">Start Detection (Back Camera)</button>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
+    <div id="camera-status"></div>
     <div id="message"></div>
 
-    <!-- Load TensorFlow.js and Teachable Machine libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script>
-        const URL = "https://teachablemachine.withgoogle.com/models/J-kXaPdE1/";
-
         let model, webcam, labelContainer, maxPredictions;
-        let lastPlayedTime = 0;
-
-        const audioFiles = {
-            "500": "500.mp3",
-            "200": "200.mp3",
-            "100": "100.mp3",
-            "50": "50.mp3",
-            "10": "10.mp3",
-            "100 (USD)": "100_dollar.mp3",
-            "50 (USD)": "audio/50_dollar.mp3",
-            "20 (USD)": "audio/20_dollar.mp3",
-            "10 (USD)": "audio/10_dollar.mp3",
-            "No currency note detected": "audio/no_currency.mp3"
-        };
+        let lastSpokenTime = 0;
+        const URL = "https://teachablemachine.withgoogle.com/models/GeWwvngNC/";
 
         async function init(useBackCamera = false) {
             const modelURL = URL + "model.json";
@@ -103,27 +76,26 @@
             const constraints = {
                 video: {
                     facingMode: useBackCamera ? { exact: "environment" } : "user",
-                    width: 320, // Reduced resolution for faster loading
+                    width: 320,
                     height: 240
                 }
             };
 
             navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(stream) {
+                .then((stream) => {
                     const videoElement = document.createElement("video");
                     videoElement.srcObject = stream;
                     videoElement.play();
-                    videoElement.width = 320; // Adjusted width
-                    videoElement.height = 240; // Adjusted height
 
-                    document.getElementById("webcam-container").innerHTML = ""; // Clear existing webcam
+                    document.getElementById("webcam-container").innerHTML = ""; 
                     document.getElementById("webcam-container").appendChild(videoElement);
+                    document.getElementById("camera-status").innerHTML = `Camera: ${useBackCamera ? "Back" : "Front"}`;
 
                     webcam = new tmImage.Webcam(320, 240, false);
                     webcam.video = videoElement;
 
                     labelContainer = document.getElementById("label-container");
-                    labelContainer.innerHTML = ""; // Clear previous labels
+                    labelContainer.innerHTML = ""; 
                     for (let i = 0; i < maxPredictions; i++) {
                         labelContainer.appendChild(document.createElement("div"));
                     }
@@ -133,8 +105,8 @@
                         window.requestAnimationFrame(loop);
                     };
                 })
-                .catch(function(err) {
-                    console.error("Error accessing the camera: ", err);
+                .catch((err) => {
+                    console.error("Error accessing the camera:", err);
                 });
         }
 
@@ -164,24 +136,19 @@
             document.getElementById("message").innerHTML = `Detected: ${predictedClass}`;
 
             const currentTime = Date.now();
-            if (maxProbability >= 0.75 && (currentTime - lastPlayedTime >= 5000)) { // Changed to 5000ms for 5 seconds
-                playAudio(predictedClass);
-                lastPlayedTime = currentTime;
+            if (maxProbability >= 0.8 && currentTime - lastSpokenTime >= 4000) {
+                speak(predictedClass);
+                lastSpokenTime = currentTime;
             }
         }
 
-        function playAudio(className) {
-            const audioPath = audioFiles[className];
-            if (audioPath) {
-                const audio = new Audio(audioPath);
-                audio.play().catch((error) => {
-                    console.error("Audio failed to play:", error);
-                });
-                console.log(`Playing audio for: ${className}`);
-            } else {
-                console.error("Audio file not found for: " + className);
-            }
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1; // Adjust the rate of speech if needed
+            speechSynthesis.speak(utterance);
+            console.log(`Speaking: ${text}`);
         }
     </script>
 </body>
 </html>
+
