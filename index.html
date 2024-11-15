@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Currency Detection Using Teachable Machine</title>
     <style>
-        /* Apply a gradient background for a modern mobile-friendly look */
         body {
-            background: linear-gradient(to right, #4facfe, #00f2fe); /* Gradient background */
+            background: url('https://img.freepik.com/free-vector/digital-rupee-inr-indian-currency-golden-coin-background_1017-41094.jpg?t=st=1731661697~exp=1731665297~hmac=80ddb906096cf096bf56ffce86c383cfd42320cb8f0c4ebd48204c62824186df&w=996') no-repeat center center fixed;
+            background-size: cover;
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
@@ -17,15 +17,15 @@
             justify-content: center;
             height: 100vh;
             text-align: center;
+            color: white;
         }
 
         h2 {
-            color: white;
             margin-bottom: 20px;
             font-size: 24px;
+            text-shadow: 2px 2px 4px #000;
         }
 
-        /* Style the buttons for better visibility on mobile */
         button {
             background-color: #00f2fe;
             border: none;
@@ -36,94 +36,78 @@
             margin: 10px;
             border-radius: 8px;
             transition: background-color 0.3s;
+            box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
         }
 
         button:hover {
             background-color: #009cbb;
         }
 
-        #message {
+        #webcam-container {
+            margin-top: 20px;
+        }
+
+        #message, #camera-status {
             font-size: 20px;
             font-weight: bold;
             margin-top: 20px;
-            color: white;
-        }
-
-        #webcam-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-        }
-
-        #label-container {
-            margin-top: 20px;
+            text-shadow: 1px 1px 3px #000;
         }
     </style>
 </head>
 <body>
     <h2>Currency Detection Using Teachable Machine</h2>
-    <button onclick="init(false)">Start Detection (Front Camera)</button>
-    <button onclick="init(true)">Start Detection (Back Camera)</button>
+    <button id="swap-camera-btn" onclick="toggleCamera()">Swap Camera</button>
     <div id="webcam-container"></div>
     <div id="label-container"></div>
+    <div id="camera-status"></div>
     <div id="message"></div>
 
-    <!-- Load TensorFlow.js and Teachable Machine libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script>
-        const URL = "https://teachablemachine.withgoogle.com/models/J-kXaPdE1/";
-
+        const URL = "https://teachablemachine.withgoogle.com/models/GeWwvngNC/";
         let model, webcam, labelContainer, maxPredictions;
-        let lastPlayedTime = 0;
+        let useBackCamera = false; // Default to front camera
+        let lastSpokenTime = 0;
 
-        const audioFiles = {
-            "500": "500.mp3",
-            "200": "200.mp3",
-            "100": "100.mp3",
-            "50": "50.mp3",
-            "10": "10.mp3",
-            "100 (USD)": "100_dollar.mp3",
-            "50 (USD)": "audio/50_dollar.mp3",
-            "20 (USD)": "audio/20_dollar.mp3",
-            "10 (USD)": "audio/10_dollar.mp3",
-            "No currency note detected": "audio/no_currency.mp3"
-        };
-
-        async function init(useBackCamera = false) {
+        async function loadModel() {
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
 
             model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
+        }
 
+        async function initCamera() {
             if (webcam) webcam.stop();
 
             const constraints = {
                 video: {
                     facingMode: useBackCamera ? { exact: "environment" } : "user",
-                    width: 320, // Reduced resolution for faster loading
+                    width: 320,
                     height: 240
                 }
             };
 
             navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(stream) {
+                .then((stream) => {
                     const videoElement = document.createElement("video");
                     videoElement.srcObject = stream;
                     videoElement.play();
-                    videoElement.width = 320; // Adjusted width
-                    videoElement.height = 240; // Adjusted height
 
-                    document.getElementById("webcam-container").innerHTML = ""; // Clear existing webcam
+                    document.getElementById("webcam-container").innerHTML = "";
                     document.getElementById("webcam-container").appendChild(videoElement);
+                    const cameraType = useBackCamera ? "Back Camera" : "Front Camera";
+                    document.getElementById("camera-status").innerHTML = `Camera: ${cameraType}`;
+                    speak(`Switched to ${cameraType}`);
 
                     webcam = new tmImage.Webcam(320, 240, false);
                     webcam.video = videoElement;
 
                     labelContainer = document.getElementById("label-container");
-                    labelContainer.innerHTML = ""; // Clear previous labels
+                    labelContainer.innerHTML = "";
                     for (let i = 0; i < maxPredictions; i++) {
                         labelContainer.appendChild(document.createElement("div"));
                     }
@@ -133,14 +117,19 @@
                         window.requestAnimationFrame(loop);
                     };
                 })
-                .catch(function(err) {
-                    console.error("Error accessing the camera: ", err);
+                .catch((err) => {
+                    console.error("Error accessing the camera:", err);
                 });
         }
 
+        async function toggleCamera() {
+            useBackCamera = !useBackCamera; // Toggle camera
+            await initCamera(); // Reinitialize the camera
+        }
+
         async function loop() {
-            await predict(); 
-            window.requestAnimationFrame(loop); 
+            await predict();
+            window.requestAnimationFrame(loop);
         }
 
         async function predict() {
@@ -164,27 +153,25 @@
             document.getElementById("message").innerHTML = `Detected: ${predictedClass}`;
 
             const currentTime = Date.now();
-            if (maxProbability >= 0.75 && (currentTime - lastPlayedTime >= 10000)) {
-                playAudio(predictedClass); 
-                lastPlayedTime = currentTime;
+            if (maxProbability >= 0.8 && currentTime - lastSpokenTime >= 4000) {
+                speak(predictedClass);
+                lastSpokenTime = currentTime;
             }
         }
 
-        function playAudio(className) {
-            const audioPath = audioFiles[className];
-            if (audioPath) {
-                const audio = new Audio(audioPath);
-                audio.play().catch((error) => {
-                    console.error("Audio failed to play:", error);
-                });
-                console.log(`Playing audio for: ${className}`);
-            } else {
-                console.error("Audio file not found for: " + className);
-            }
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1; // Adjust the rate of speech if needed
+            speechSynthesis.speak(utterance);
+            console.log(`Speaking: ${text}`);
         }
+
+        // Load the model and initialize the camera
+        loadModel().then(() => initCamera());
     </script>
 </body>
 </html>
+
 
 
 
